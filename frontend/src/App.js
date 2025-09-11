@@ -3,6 +3,9 @@ import React from 'react';
 import './App.css';
 import Register from './components/Register';
 import Login from './components/Login';
+import CreateChallenge from './components/CreateChallenge';
+import ChallengeList from './components/ChallengeList';
+import UserChallenges from './components/UserChallenges'; // Importa el nuevo componente
 
 function App() {
   return (
@@ -11,6 +14,12 @@ function App() {
       <Register />
       <hr />
       <Login />
+      <hr />
+      <CreateChallenge />
+      <hr />
+      <ChallengeList />
+      <hr />
+      <UserChallenges /> {/* Añade el nuevo componente aquí */}
     </div>
   );
 }

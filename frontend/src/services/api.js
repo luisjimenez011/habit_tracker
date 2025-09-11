@@ -45,7 +45,29 @@ export const createChallenge = async (challengeData) => {
   });
 };
 
-// Puedes añadir aquí más funciones para el resto de tus rutas...
-// Por ejemplo:
-// export const getUserProfile = async () => { ... }
-// export const getChallengeComments = async (challengeId) => { ... }
+
+// Función para unirse a un reto (requiere autenticación)
+export const joinChallenge = async (challengeId) => {
+    const token = getToken();
+    if (!token) {
+        throw new Error('No hay token de autenticación.');
+    }
+    const response = await api.post(`/challenges/${challengeId}/join`, {}, {
+        headers: {
+            'x-auth-token': token,
+        },
+    });
+    return response;
+};
+
+export const getUserChallenges = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('No hay token de autenticación.');
+    }
+    return api.get('/challenges/me', {
+        headers: {
+            'x-auth-token': token,
+        },
+    });
+};
