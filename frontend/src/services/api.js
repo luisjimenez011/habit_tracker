@@ -84,3 +84,15 @@ export const getUserProfile = async () => {
         },
     });
 };
+
+export const markChallengeProgress = async (challengeId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('No hay token de autenticación.');
+    }
+    return api.put(`/challenges/${challengeId}/progress`, {}, {
+        headers: {
+            'x-auth-token': token,
+        },
+    });
+};

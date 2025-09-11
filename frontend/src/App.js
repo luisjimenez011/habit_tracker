@@ -1,16 +1,16 @@
-// src/App.js
 import React from 'react';
 import './App.css';
-import { AuthProvider } from './context/AuthContext'; // 1. Importa AuthProvider
+import { AuthProvider } from './context/AuthContext';
 import Register from './components/Register';
 import Login from './components/Login';
 import CreateChallenge from './components/CreateChallenge';
 import ChallengeList from './components/ChallengeList';
 import UserChallenges from './components/UserChallenges';
+import CompletedChallenges from './components/CompletedChallenges'; // Importa el nuevo componente
 
 function App() {
   return (
-    <AuthProvider> {/* 2. Envuelve toda la aplicación con AuthProvider */}
+    <AuthProvider>
       <div className="App">
         <h1>Bienvenido a la Plataforma de Retos</h1>
         <Register />
@@ -22,6 +22,8 @@ function App() {
         <ChallengeList />
         <hr />
         <UserChallenges />
+        <hr />
+        <CompletedChallenges /> {/* Añade el nuevo componente aquí */}
       </div>
     </AuthProvider>
   );

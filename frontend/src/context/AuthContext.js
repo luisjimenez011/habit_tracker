@@ -11,37 +11,43 @@ export const AuthProvider = ({ children }) => {
 
     const refreshUserChallenges = async () => {
         try {
-            const challenges = await apiGetUserChallenges();
-            setUserChallenges(challenges.data);
+            const challengesResponse = await apiGetUserChallenges();
+            setUserChallenges(challengesResponse.data);
         } catch (error) {
             console.error('Error al recargar los retos del usuario:', error);
+            setUserChallenges([]); // Limpiar la lista si falla la llamada
         }
     };
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const profile = await getUserProfile();
-                    setUser(profile.data);
-                    await refreshUserChallenges();
-                } catch (error) {
-                    console.error('Error al obtener los datos del usuario:', error);
-                    localStorage.removeItem('token');
-                }
+    const loadUserFromToken = async () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const profileResponse = await getUserProfile();
+                setUser(profileResponse.data);
+                await refreshUserChallenges();
+            } catch (error) {
+                console.error('Error al cargar el usuario o retos:', error);
+                localStorage.removeItem('token');
+                setUser(null);
+                setUserChallenges([]);
             }
-            setLoading(false);
-        };
-        fetchUserData();
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        loadUserFromToken();
     }, []);
 
     const handleLogin = async (credentials) => {
-        const response = await login(credentials);
-        const profile = await getUserProfile();
-        setUser(profile.data);
-        await refreshUserChallenges();
-        return response;
+        try {
+            const response = await login(credentials);
+            await loadUserFromToken(); // Cargar usuario y retos después del login
+            return response;
+        } catch (error) {
+            throw error;
+        }
     };
 
     const handleLogout = () => {
@@ -50,8 +56,17 @@ export const AuthProvider = ({ children }) => {
         setUserChallenges([]);
     };
 
+    const value = {
+        user,
+        loading,
+        login: handleLogin,
+        logout: handleLogout,
+        userChallenges,
+        refreshUserChallenges,
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login: handleLogin, logout: handleLogout, userChallenges, refreshUserChallenges }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
