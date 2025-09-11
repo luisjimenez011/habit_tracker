@@ -8,7 +8,7 @@ const userRoutes = require("./routes/userRoutes");
 const challengesRoutes = require("./routes/challengesRoutes");
 const commentsRoutes = require("./routes/commentsRoutes");
 const categoriesRoutes = require("./routes/categoriesRoutes");
-const badgesRoutes = require("./routes/badgesRoutes"); // Importa las rutas de insignias
+const badgesRoutes = require("./routes/badgesRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,13 +16,13 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 // Agrupamos las rutas por su prefijo
-app.use("/api/users", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/users", badgesRoutes); // Usa las rutas de insignias de usuario
-app.use("/api/challenges", challengesRoutes);
-app.use("/api/challenges", commentsRoutes);
-app.use("/api/categories", categoriesRoutes);
-app.use("/api/badges", badgesRoutes); // Usa las rutas de insignias
+app.use("/api/users", authRoutes); // /api/users/register, /api/users/login
+app.use("/api/users", userRoutes); // /api/users/me, /api/users/ranking
+app.use("/api/users", badgesRoutes); // /api/users/me/badges
+app.use("/api/challenges", challengesRoutes); // /api/challenges, /api/challenges/:id, /api/challenges/:id/join
+app.use("/api/challenges", commentsRoutes); // /api/challenges/:id/comments
+app.use("/api/categories", categoriesRoutes); // /api/categories
+app.use("/api/badges", badgesRoutes); // /api/badges
 
 // Ruta de prueba
 app.get("/", (req, res) => {

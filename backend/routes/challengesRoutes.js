@@ -1,10 +1,30 @@
 const express = require('express');
-const client = require('../database'); // Importa la conexión
-const auth = require('../middleware/auth'); // Importa el middleware de autenticación
+const client = require('../database');
+const auth = require('../middleware/auth'); 
 
 const router = express.Router();
 
-// 1. Obtener todos los retos
+// 1. Crear un nuevo reto (Ruta protegida) 🔒
+// POST /api/challenges
+router.post('/', auth, async (req, res) => {
+    const { title, description, duration_days, category_id } = req.body;
+    const creator_id = req.user.id;
+    try {
+        const newChallenge = await client.query(
+            "INSERT INTO challenges (title, description, duration_days, creator_id, category_id) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            [title, description, duration_days, creator_id, category_id]
+        );
+        res.status(201).json({
+            message: "Reto creado exitosamente",
+            challenge: newChallenge.rows[0],
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: "Error en el servidor al crear el reto." });
+    }
+});
+
+// 2. Obtener todos los retos
 // GET /api/challenges
 router.get('/', async (req, res) => {
     try {
@@ -16,7 +36,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. Obtener los detalles de un solo reto
+// 3. Obtener los detalles de un solo reto
 // GET /api/challenges/:id
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
@@ -32,11 +52,11 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// 3. Unirse a un reto (Ruta protegida) 🔒
+// 4. Unirse a un reto (Ruta protegida) 🔒
 // POST /api/challenges/:id/join
 router.post('/:id/join', auth, async (req, res) => {
-    const { id } = req.params; // ID del reto
-    const user_id = req.user.id; // ID del usuario autenticado
+    const { id } = req.params;
+    const user_id = req.user.id;
     try {
         await client.query(
             "INSERT INTO user_challenges (user_id, challenge_id, start_date) VALUES ($1, $2, NOW()) ON CONFLICT (user_id, challenge_id) DO NOTHING",
@@ -49,7 +69,7 @@ router.post('/:id/join', auth, async (req, res) => {
     }
 });
 
-// 4. Marcar el progreso de un reto (Ruta protegida) 🔒
+// 5. Marcar el progreso de un reto (Ruta protegida) 🔒
 // PUT /api/challenges/:id/progress
 router.put('/:id/progress', auth, async (req, res) => {
     const { id } = req.params;
