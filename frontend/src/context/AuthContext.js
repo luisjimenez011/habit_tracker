@@ -1,3 +1,4 @@
+// src/context/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import { login, register, getUserProfile, getUserChallenges as apiGetUserChallenges } from '../services/api';
 

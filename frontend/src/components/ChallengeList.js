@@ -1,9 +1,11 @@
 // frontend/src/components/ChallengeList.js
-import React, { useState, useEffect } from 'react';
-import { getChallenges, joinChallenge } from '../services/api'; // Importa joinChallenge
+import React, { useState, useEffect, useContext } from 'react';
+import { getChallenges, joinChallenge } from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 const ChallengeList = () => {
     const [challenges, setChallenges] = useState([]);
+    const { refreshUserChallenges, user } = useContext(AuthContext);
 
     useEffect(() => {
         const fetchChallenges = async () => {
@@ -21,6 +23,12 @@ const ChallengeList = () => {
         try {
             await joinChallenge(challengeId);
             alert('¡Te has unido al reto exitosamente!');
+            
+            // Si el usuario está logueado, recarga los retos
+            if(user) {
+                refreshUserChallenges();
+            }
+
         } catch (err) {
             console.error('Error al unirse al reto:', err.response.data);
             alert('Error al unirse al reto. Debes iniciar sesión.');

@@ -1,21 +1,17 @@
 // frontend/src/components/UserChallenges.js
-import React, { useState, useEffect } from 'react';
-import { getUserChallenges } from '../services/api';
+import React, { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const UserChallenges = () => {
-    const [userChallenges, setUserChallenges] = useState([]);
+    const { user, loading, userChallenges } = useContext(AuthContext);
 
-    useEffect(() => {
-        const fetchUserChallenges = async () => {
-            try {
-                const response = await getUserChallenges();
-                setUserChallenges(response.data);
-            } catch (error) {
-                console.error('Error al obtener los retos del usuario:', error);
-            }
-        };
-        fetchUserChallenges();
-    }, []);
+    if (loading) {
+        return <p>Cargando retos...</p>;
+    }
+
+    if (!user) {
+        return <p>Por favor, inicia sesión para ver tus retos.</p>;
+    }
 
     return (
         <div>

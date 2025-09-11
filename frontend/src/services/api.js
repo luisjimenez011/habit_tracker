@@ -71,3 +71,16 @@ export const getUserChallenges = async () => {
         },
     });
 };
+
+// Función para obtener el perfil del usuario (requiere autenticación)
+export const getUserProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('No hay token de autenticación.');
+    }
+    return api.get('/users/me', {
+        headers: {
+            'x-auth-token': token,
+        },
+    });
+};
