@@ -9,16 +9,18 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [userChallenges, setUserChallenges] = useState([]);
 
+    // Función para recargar la lista de retos del usuario desde la API
     const refreshUserChallenges = async () => {
         try {
             const challengesResponse = await apiGetUserChallenges();
             setUserChallenges(challengesResponse.data);
         } catch (error) {
             console.error('Error al recargar los retos del usuario:', error);
-            setUserChallenges([]); // Limpiar la lista si falla la llamada
+            setUserChallenges([]);
         }
     };
 
+    // Función para cargar los datos del usuario y sus retos al inicio
     const loadUserFromToken = async () => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -36,20 +38,27 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     };
 
+    // Este efecto se ejecuta una vez al cargar el componente
     useEffect(() => {
         loadUserFromToken();
     }, []);
 
+    // Función para manejar el inicio de sesión
     const handleLogin = async (credentials) => {
         try {
             const response = await login(credentials);
-            await loadUserFromToken(); // Cargar usuario y retos después del login
+            // Después del login exitoso, cargamos el perfil del nuevo usuario.
+            const profileResponse = await getUserProfile();
+            setUser(profileResponse.data);
+            // Y luego, recargamos sus retos.
+            await refreshUserChallenges();
             return response;
         } catch (error) {
             throw error;
         }
     };
 
+    // Función para cerrar la sesión
     const handleLogout = () => {
         localStorage.removeItem('token');
         setUser(null);

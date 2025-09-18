@@ -53,19 +53,15 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// 4. Obtener los detalles de un solo reto (Ruta dinámica)
-// GET /api/challenges/:id
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
+// 4. Ruta para la lista de categorías de retos (Ruta estática)
+// GET /api/challenges/categories
+router.get('/categories', async (req, res) => {
     try {
-        const result = await client.query('SELECT * FROM challenges WHERE id = $1', [id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Reto no encontrado.' });
-        }
-        res.status(200).json(result.rows[0]);
+        const result = await client.query('SELECT * FROM categories');
+        res.status(200).json(result.rows);
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: 'Error en el servidor.' });
+        res.status(500).json({ message: 'Error en el servidor al obtener las categorías.' });
     }
 });
 
@@ -92,29 +88,23 @@ router.put('/:id/progress', auth, async (req, res) => {
     const { id } = req.params;
     const user_id = req.user.id;
     try {
-        // Obtenemos la duración del reto desde la tabla `challenges`
         const challengeInfo = await client.query("SELECT duration_days FROM challenges WHERE id = $1", [id]);
         if (challengeInfo.rows.length === 0) {
             return res.status(404).json({ message: 'Reto no encontrado.' });
         }
         const duration_days = challengeInfo.rows[0].duration_days;
-
-        // Aumentamos el contador de progreso
         const result = await client.query(
             "UPDATE user_challenges SET progress_count = progress_count + 1, last_progress_date = NOW() WHERE user_id = $1 AND challenge_id = $2 RETURNING *",
             [user_id, id]
         );
         const updatedUserChallenge = result.rows[0];
-
-        // Verificamos si el reto ha sido completado
         if (updatedUserChallenge.progress_count >= duration_days) {
             await client.query(
                 "UPDATE user_challenges SET status = 'completed' WHERE user_id = $1 AND challenge_id = $2",
                 [user_id, id]
             );
-            updatedUserChallenge.status = 'completed'; // Actualizamos el objeto para la respuesta
+            updatedUserChallenge.status = 'completed';
         }
-
         res.status(200).json(updatedUserChallenge);
     } catch (err) {
         console.error(err.message);
@@ -122,7 +112,7 @@ router.put('/:id/progress', auth, async (req, res) => {
     }
 });
 
-// 7. ruta para ver los participantes de un reto (Ruta protegida) 🔒
+// 7. Ruta para ver los participantes de un reto (Ruta protegida) 🔒
 // GET /api/challenges/:id/participants
 router.get('/:id/participants', auth, async (req, res) => {
     const { id } = req.params;
@@ -135,6 +125,22 @@ router.get('/:id/participants', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ message: "Error en el servidor al obtener los participantes." });
+    }
+});
+
+// 8. Obtener los detalles de un solo reto (Ruta dinámica)
+// GET /api/challenges/:id
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await client.query('SELECT * FROM challenges WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Reto no encontrado.' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Error en el servidor.' });
     }
 });
 
