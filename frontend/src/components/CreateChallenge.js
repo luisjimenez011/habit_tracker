@@ -1,39 +1,81 @@
 // frontend/src/components/CreateChallenge.js
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { createChallenge } from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 const CreateChallenge = () => {
-    const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        duration_days: '',
-        category_id: ''
-    });
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [duration_days, setDurationDays] = useState(1);
+    const [categoryId, setCategoryId] = useState(1);
+    const { user } = useContext(AuthContext);
 
-    const { title, description, duration_days, category_id } = formData;
-
-    const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    const onSubmit = async e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createChallenge(formData);
-            alert('¡Reto creado exitosamente!');
-            setFormData({ title: '', description: '', duration_days: '', category_id: '' }); // Limpia el formulario
+            await createChallenge({ title, description, duration_days, category_id: categoryId });
+            alert('Reto creado exitosamente!');
+            setTitle('');
+            setDescription('');
+            setDurationDays(1);
+            setCategoryId(1);
         } catch (err) {
             console.error('Error al crear el reto:', err.response.data);
-            alert('Error al crear el reto. Asegúrate de estar logueado y de llenar todos los campos.');
+            alert('Error al crear el reto. Debes iniciar sesión.');
         }
     };
+
+    if (!user) {
+        return <p>Por favor, inicia sesión para crear un reto.</p>;
+    }
 
     return (
         <div>
             <h2>Crear un Nuevo Reto</h2>
-            <form onSubmit={onSubmit}>
-                <input type="text" placeholder="Título del reto" name="title" value={title} onChange={onChange} required />
-                <textarea placeholder="Descripción" name="description" value={description} onChange={onChange} required></textarea>
-                <input type="number" placeholder="Duración (días)" name="duration_days" value={duration_days} onChange={onChange} required />
-                <input type="number" placeholder="ID de la categoría" name="category_id" value={category_id} onChange={onChange} required />
+            <form onSubmit={handleSubmit}>
+                <div>
+                    <label htmlFor="title">Título:</label>
+                    <input
+                        type="text"
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                    />
+                </div>
+                <div>
+                    <label htmlFor="description">Descripción:</label>
+                    <textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        required
+                    ></textarea>
+                </div>
+                <div>
+                    <label htmlFor="duration_days">Duración (días):</label>
+                    <input
+                        type="number"
+                        id="duration_days"
+                        value={duration_days}
+                        onChange={(e) => setDurationDays(e.target.value)}
+                        min="1"
+                        required
+                    />
+                </div>
+                <div>
+                    <label htmlFor="category_id">Categoría:</label>
+                    <select
+                        id="category_id"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                    >
+                        {/* Asume que tienes categorías en tu base de datos y los IDs corresponden */}
+                        <option value="1">Deporte</option>
+                        <option value="2">Lectura</option>
+                        <option value="3">Meditación</option>
+                    </select>
+                </div>
                 <button type="submit">Crear Reto</button>
             </form>
         </div>

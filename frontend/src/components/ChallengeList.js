@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { getChallenges, joinChallenge } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import { Link } from 'react-router-dom'; 
 
 const ChallengeList = () => {
     const [challenges, setChallenges] = useState([]);
@@ -35,25 +36,26 @@ const ChallengeList = () => {
         }
     };
 
-    return (
-        <div>
-            <h2>Retos disponibles</h2>
-            {challenges.length === 0 ? (
-                <p>No hay retos disponibles en este momento.</p>
-            ) : (
-                <ul>
-                    {challenges.map(challenge => (
-                        <li key={challenge.id}>
-                            <h3>{challenge.title}</h3>
-                            <p>{challenge.description}</p>
-                            <p>Duración: {challenge.duration_days} días</p>
-                            <button onClick={() => handleJoin(challenge.id)}>Unirse al Reto</button>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
+  return (
+    <div>
+        <h2>Retos disponibles</h2>
+        {challenges.length === 0 ? (
+            <p>No hay retos disponibles en este momento.</p>
+        ) : (
+            <ul>
+                {challenges.map(challenge => (
+                    <li key={challenge.id}>
+                        <h3>{challenge.title}</h3>
+                        <p>{challenge.description}</p>
+                        <p>Duración: {challenge.duration_days} días</p>
+                        <p>Creado por: <Link to={`/profile/${challenge.creator_id}`}>Ver Perfil</Link></p>
+                        <button onClick={() => handleJoin(challenge.id)}>Unirse al Reto</button>
+                    </li>
+                ))}
+            </ul>
+        )}
+    </div>
+);
 };
 
 export default ChallengeList;
