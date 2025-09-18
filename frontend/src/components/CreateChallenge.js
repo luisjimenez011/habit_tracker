@@ -1,27 +1,45 @@
-// frontend/src/components/CreateChallenge.js
-import React, { useState, useContext } from 'react';
-import { createChallenge } from '../services/api';
+import React, { useState, useEffect, useContext } from 'react';
+import { createChallenge, getCategories } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
 const CreateChallenge = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [duration_days, setDurationDays] = useState(1);
-    const [categoryId, setCategoryId] = useState(1);
+    const [categoryId, setCategoryId] = useState(''); // Inicializado a cadena vacía
+    const [categories, setCategories] = useState([]); // Nuevo estado para guardar las categorías
     const { user } = useContext(AuthContext);
+
+    // Usa useEffect para cargar las categorías al inicio
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await getCategories();
+                setCategories(response.data);
+            } catch (err) {
+                console.error('Error al obtener las categorías:', err);
+            }
+        };
+        fetchCategories();
+    }, []); // El array vacío asegura que se ejecute solo una vez
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createChallenge({ title, description, duration_days, category_id: categoryId });
+            await createChallenge({
+                title,
+                description,
+                duration_days,
+                category_id: categoryId
+            });
             alert('Reto creado exitosamente!');
             setTitle('');
             setDescription('');
             setDurationDays(1);
-            setCategoryId(1);
+            setCategoryId(''); // Limpiar el estado de categoría después de crear
         } catch (err) {
             console.error('Error al crear el reto:', err.response.data);
-            alert('Error al crear el reto. Debes iniciar sesión.');
+            alert('Error al crear el reto. Por favor, asegúrate de haber seleccionado una categoría válida.');
         }
     };
 
@@ -69,11 +87,14 @@ const CreateChallenge = () => {
                         id="category_id"
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
+                        required
                     >
-                        {/* Asume que tienes categorías en tu base de datos y los IDs corresponden */}
-                        <option value="1">Deporte</option>
-                        <option value="2">Lectura</option>
-                        <option value="3">Meditación</option>
+                        <option value="">Selecciona una categoría</option>
+                        {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                                {category.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
                 <button type="submit">Crear Reto</button>
