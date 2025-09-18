@@ -122,4 +122,20 @@ router.put('/:id/progress', auth, async (req, res) => {
     }
 });
 
+// 7. ruta para ver los participantes de un reto (Ruta protegida) 🔒
+// GET /api/challenges/:id/participants
+router.get('/:id/participants', auth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await client.query(
+            "SELECT u.id, u.username, uc.start_date, uc.progress_count, uc.status FROM user_challenges uc JOIN users u ON uc.user_id = u.id WHERE uc.challenge_id = $1",
+            [id]
+        );
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: "Error en el servidor al obtener los participantes." });
+    }
+});
+
 module.exports = router;
