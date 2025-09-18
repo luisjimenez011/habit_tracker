@@ -1,4 +1,4 @@
-// frontend/src/components/UserProfile.js
+// frontend/src/pages/UserProfile.js
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';

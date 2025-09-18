@@ -60,8 +60,10 @@ export const getUserProfileById = (userId) => {
 // --- Funciones de retos ---
 
 // Función para obtener todos los retos disponibles
-export const getChallenges = () => {
-    return api.get('/challenges');
+export const getChallenges = ({ search = '', category_id = '' } = {}) => {
+    return api.get('/challenges', {
+        params: { search, category_id }
+    });
 };
 
 // Función para crear un nuevo reto (requiere autenticación)

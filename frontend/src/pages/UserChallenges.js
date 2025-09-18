@@ -1,4 +1,4 @@
-// frontend/src/components/UserChallenges.js
+// frontend/src/pages/UserChallenges.js
 
 import React, { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';

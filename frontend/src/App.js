@@ -1,41 +1,44 @@
 // src/App.js
 import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Register from './components/Register';
-import Login from './components/Login';
-import UserProfile from './components/UserProfile';
-import ChallengeParticipants from './components/ChallengeParticipants';
-import Dashboard from './components/Dashboard'; // Importa el Dashboard
-import AccountSettings from './components/AccountSettings';
+import Navbar from './components/Navbar';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import UserProfile from './pages/UserProfile';
+import ChallengeParticipants from './pages/ChallengeParticipants';
+import Dashboard from './pages/Dashboard';
+import AccountSettings from './pages/AccountSettings';
+import ChallengeList from './pages/ChallengeList';
+import UserChallenges from './pages/UserChallenges';
+import CompletedChallenges from './pages/CompletedChallenges';
+import CreateChallenge from './pages/CreateChallenge';
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <div className="App">
-          <h1>Plataforma de Retos</h1>
-          <nav>
-            <Link to="/">Inicio</Link> | <Link to="/profile">Mi Perfil</Link> | <Link to="/settings">Configuración</Link>
-          </nav>
-          <hr />
+      <AuthProvider> {/* CORRECTO: El proveedor envuelve a toda la aplicación */}
+        <Navbar /> {/* Se renderiza en todas las páginas */}
+        <main>
           <Routes>
-            <Route path="/" element={
-              <>
-                <Register />
-                <hr />
-                <Login />
-                <hr />
-                <Dashboard />
-              </>
-            } />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="/profile/:userId" element={<UserProfile />} />
-            <Route path="/settings" element={<AccountSettings />} />
+            {/* Rutas públicas */}
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/challenges" element={<ChallengeList />} />
+            <Route path="/create-challenge" element={<CreateChallenge />} />
+            <Route path="/challenges/:challengeId" element={<ChallengeList />} /> {/* Ruta para ver un reto específico */}
             <Route path="/challenges/:challengeId/participants" element={<ChallengeParticipants />} />
+
+            {/* Rutas que requieren autenticación */}
+            <Route path="/user-profile" element={<UserProfile />} />
+            <Route path="/account-settings" element={<AccountSettings />} />
+            <Route path="/user-challenges" element={<UserChallenges />} />
+            <Route path="/completed-challenges" element={<CompletedChallenges />} />
           </Routes>
-        </div>
+        </main>
       </AuthProvider>
     </Router>
   );

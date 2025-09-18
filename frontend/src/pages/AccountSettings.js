@@ -1,4 +1,4 @@
-// frontend/src/components/AccountSettings.js
+// frontend/src/pages/AccountSettings.js
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { updateUserProfile, deleteUserAccount } from '../services/api';

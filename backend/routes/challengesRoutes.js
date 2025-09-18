@@ -144,4 +144,33 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// 9. Parametros de busqueda
+router.get('/', async (req, res) => {
+    const { search, category_id } = req.query;
+    let query = 'SELECT * FROM challenges WHERE is_active = TRUE';
+    const values = [];
+    let paramIndex = 1;
+
+    if (search) {
+        query += ` AND title ILIKE $${paramIndex}`;
+        values.push(`%${search}%`);
+        paramIndex++;
+    }
+
+    if (category_id) {
+        query += ` AND category_id = $${paramIndex}`;
+        values.push(category_id);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+
+    try {
+        const result = await client.query(query, values);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Error en el servidor al obtener los retos.' });
+    }
+});
+
 module.exports = router;
