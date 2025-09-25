@@ -197,7 +197,25 @@ router.get("/:id/participants", auth, async (req, res) => {
   }
 });
 
-// 8. Obtener los detalles de un solo reto (Ruta dinámica)
+// 8. Obtener los retos creados por el usuario autenticado (Ruta protegida) 🔒
+// GET /api/challenges/created
+router.get("/created", auth, async (req, res) => {
+  const creator_id = req.user.id;
+  try {
+    const result = await client.query(
+      // 🔑 IMPORTANTE: Añadida 'duration_days' al SELECT
+      "SELECT id, title, description, created_at, is_active, duration_days FROM challenges WHERE creator_id = $1 ORDER BY created_at DESC",
+      [creator_id]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error al obtener los retos creados:", err.message);
+    res.status(500).json({ message: "Error en el servidor." });
+  }
+});
+
+
+// 9. Obtener los detalles de un solo reto (Ruta dinámica)
 // GET /api/challenges/:id
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
@@ -215,5 +233,6 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Error en el servidor." });
   }
 });
+
 
 module.exports = router;

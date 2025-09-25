@@ -1,6 +1,6 @@
-// frontend/src/pages/UserProfile.js (Reemplazar con esta versión rica en datos)
+// frontend/src/pages/UserProfile.js
 
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { getCreatedChallenges } from '../services/api';
 import { Container, Card, Row, Col, Alert, ListGroup } from 'react-bootstrap';
@@ -8,28 +8,31 @@ import { Link } from 'react-router-dom';
 
 const UserProfile = () => {
     // Usamos 'loading' del contexto para la carga inicial del usuario
-    const { user, loading: authLoading, userChallenges } = useContext(AuthContext); 
+    const { user, loading: authLoading, userChallenges } = useContext(AuthContext);
     const [createdChallenges, setCreatedChallenges] = useState([]);
     const [loadingCreated, setLoadingCreated] = useState(true);
 
-    // Cargar retos creados por el usuario
-    useEffect(() => {
-        const fetchCreatedChallenges = async () => {
-            if (user) {
-                try {
-                    const response = await getCreatedChallenges();
-                    setCreatedChallenges(response.data);
-                } catch (err) {
-                    console.error("Error al cargar retos creados:", err);
-                } finally {
-                    setLoadingCreated(false);
-                }
-            } else {
+    // 1. Lógica de fetching memorizada.
+    const fetchCreatedChallenges = useCallback(async () => {
+        if (user) {
+            setLoadingCreated(true);
+            try {
+                const response = await getCreatedChallenges();
+                setCreatedChallenges(response.data);
+            } catch (err) {
+                console.error("Error al cargar retos creados:", err);
+            } finally {
                 setLoadingCreated(false);
             }
-        };
-        fetchCreatedChallenges();
+        } else {
+            setLoadingCreated(false);
+        }
     }, [user]);
+
+    // 2. Ejecutar la función cuando el componente se monta (solución al problema).
+    useEffect(() => {
+        fetchCreatedChallenges();
+    }, [fetchCreatedChallenges]); // Dependencia en la función memorizada
 
     if (authLoading || loadingCreated) {
         return <Container className="my-5"><p>Cargando perfil...</p></Container>;
@@ -90,8 +93,8 @@ const UserProfile = () => {
                                 <Card.Body>
                                     <Card.Title>{createdChallenges.length}</Card.Title>
                                     <Card.Text>Retos Creados</Card.Text>
-                                    {/* Aquí podrías añadir un link a una vista de tus retos creados si es necesario */}
-                                    <Link to="/create-challenge" className="stretched-link"></Link> 
+                                    {/* ⬅️ Aquí hemos cambiado el link para que apunte a la sección */}
+                                    <Link to="#created-challenges" className="stretched-link"></Link> 
                                 </Card.Body>
                             </Card>
                         </Col>
@@ -100,13 +103,15 @@ const UserProfile = () => {
             </Row>
 
             {/* Retos Creados por el Usuario (Lista) */}
-            <h3 className="mb-3">Tus Retos Publicados ({createdChallenges.length})</h3>
+            {/* ⬅️ Hemos añadido este id para el enlace */}
+            <h3 className="mb-3" id="created-challenges">Tus Retos Publicados ({createdChallenges.length})</h3>
             <ListGroup>
                 {createdChallenges.length > 0 ? (
                     createdChallenges.map(challenge => (
                         <ListGroup.Item key={challenge.id} className="d-flex justify-content-between align-items-center">
                             <Link to={`/challenges/${challenge.id}`}>{challenge.title}</Link>
-                            <small className="text-muted">{challenge.duration_days} días</small>
+                            {/* Requerimos duration_days del backend */}
+                            <small className="text-muted">{challenge.duration_days} días</small> 
                         </ListGroup.Item>
                     ))
                 ) : (
