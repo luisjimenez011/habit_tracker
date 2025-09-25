@@ -15,6 +15,7 @@ import ChallengeList from './pages/ChallengeList';
 import UserChallenges from './pages/UserChallenges';
 import CompletedChallenges from './pages/CompletedChallenges';
 import CreateChallenge from './pages/CreateChallenge';
+import ChallengeDetails from './pages/ChallengeDetails';
 
 function App() {
   return (
@@ -29,8 +30,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/challenges" element={<ChallengeList />} />
             <Route path="/create-challenge" element={<CreateChallenge />} />
-            <Route path="/challenges/:challengeId" element={<ChallengeList />} /> {/* Ruta para ver un reto específico */}
             <Route path="/challenges/:challengeId/participants" element={<ChallengeParticipants />} />
+            <Route path="/challenges/:challengeId" element={<ChallengeDetails />} />
 
             {/* Rutas que requieren autenticación */}
             <Route path="/user-profile" element={<UserProfile />} />

@@ -96,6 +96,11 @@ export const getCategories = () => {
     return api.get('/challenges/categories');
 };
 
+//función para obtener los detalles de un solo reto.
+export const getChallengeDetails = (challengeId) => {
+    return api.get(`/challenges/${challengeId}`);
+};
+
 // --- Funciones de comentarios ---
 
 // Función para obtener los comentarios de un reto específico
