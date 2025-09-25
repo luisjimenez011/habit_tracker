@@ -25,14 +25,36 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// 2. Obtener todos los retos disponibles
-// GET /api/challenges
+// 2. RUTA UNIFICADA (Para obtener retos, buscar y filtrar por categoría)
+// GET /api/challenges?search=termino&category_id=X
 router.get("/", async (req, res) => {
+  // Extraemos los parámetros de la URL. Si no existen, son undefined.
+  const { search, category_id } = req.query; // Base de la consulta: Incluimos el nombre de la categoría y solo retos activos. // Usamos LEFT JOIN para obtener la categoría.
+
+  let query =
+    "SELECT c.*, cat.name as category_name FROM challenges c LEFT JOIN categories cat ON c.category_id = cat.id WHERE c.is_active = TRUE";
+  const values = []; // Almacena los valores para evitar inyección SQL
+  let paramIndex = 1; // 1. FILTRO DE BÚSQUEDA por título (Search Term)
+
+  if (search) {
+    // ILIKE: Búsqueda insensible a mayúsculas/minúsculas. %: comodín.
+    query += ` AND c.title ILIKE $${paramIndex}`;
+    values.push(`%${search}%`);
+    paramIndex++;
+  } // 2. FILTRO DE CATEGORÍA // category_id !== '' maneja el caso donde el usuario selecciona "Todas las categorías" (value="")
+
+  if (category_id && category_id !== "") {
+    query += ` AND c.category_id = $${paramIndex}`;
+    values.push(category_id);
+    paramIndex++;
+  } // Ordenamos por fecha de creación (los más nuevos primero)
+  query += " ORDER BY c.created_at DESC";
+
   try {
-    const result = await client.query("SELECT * FROM challenges");
+    const result = await client.query(query, values);
     res.status(200).json(result.rows);
   } catch (err) {
-    console.error(err.message);
+    console.error("Error al obtener los retos filtrados:", err.message);
     res
       .status(500)
       .json({ message: "Error en el servidor al obtener los retos." });
@@ -51,11 +73,9 @@ router.get("/me", auth, async (req, res) => {
     res.status(200).json(result.rows);
   } catch (err) {
     console.error(err.message);
-    res
-      .status(500)
-      .json({
-        message: "Error en el servidor al obtener los retos del usuario.",
-      });
+    res.status(500).json({
+      message: "Error en el servidor al obtener los retos del usuario.",
+    });
   }
 });
 
@@ -92,62 +112,71 @@ router.post("/:id/join", auth, async (req, res) => {
 
 // 6. Marcar el progreso de un reto (Ruta protegida) 🔒
 // PUT /api/challenges/:id/progress
-router.put('/:id/progress', auth, async (req, res) => {
-    const { id: challengeId } = req.params;
-    const user_id = req.user.id;
-    const today = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+router.put("/:id/progress", auth, async (req, res) => {
+  const { id: challengeId } = req.params;
+  const user_id = req.user.id;
+  const today = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD
 
-    try {
-        // 1. Obtener datos del reto y verificar la última fecha de progreso
-        const checkResult = await client.query(
-            "SELECT duration_days, progress_count, last_progress_date FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
-            [user_id, challengeId]
-        );
+  try {
+    // 1. Obtener datos del reto y verificar la última fecha de progreso
+    const checkResult = await client.query(
+      "SELECT duration_days, progress_count, last_progress_date FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
+      [user_id, challengeId]
+    );
 
-        if (checkResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Usuario no unido a este reto.' });
-        }
-        
-        const { duration_days, progress_count, last_progress_date } = checkResult.rows[0];
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ message: "Usuario no unido a este reto." });
+    }
 
-        // Compara solo la fecha para evitar doble check-in
-        const lastProgressDateStr = last_progress_date ? new Date(last_progress_date).toISOString().split('T')[0] : null;
+    const { duration_days, progress_count, last_progress_date } =
+      checkResult.rows[0];
 
-        if (lastProgressDateStr === today) {
-            return res.status(400).json({ message: 'Ya marcaste tu progreso para este reto hoy. Vuelve mañana.' });
-        }
-        
-        if (progress_count >= duration_days) {
-             return res.status(400).json({ message: '¡Reto completado! No puedes seguir registrando progreso.' });
-        }
+    // Compara solo la fecha para evitar doble check-in
+    const lastProgressDateStr = last_progress_date
+      ? new Date(last_progress_date).toISOString().split("T")[0]
+      : null;
 
-        // 2. Actualizar el contador de progreso y la fecha (Usando NOW() para simplicidad o today si prefieres date)
-        const updateResult = await client.query(
-            `
+    if (lastProgressDateStr === today) {
+      return res.status(400).json({
+        message: "Ya marcaste tu progreso para este reto hoy. Vuelve mañana.",
+      });
+    }
+
+    if (progress_count >= duration_days) {
+      return res.status(400).json({
+        message: "¡Reto completado! No puedes seguir registrando progreso.",
+      });
+    }
+
+    // 2. Actualizar el contador de progreso y la fecha (Usando NOW() para simplicidad o today si prefieres date)
+    const updateResult = await client.query(
+      `
             UPDATE user_challenges 
             SET progress_count = progress_count + 1, last_progress_date = NOW()
             WHERE user_id = $1 AND challenge_id = $2 RETURNING *
             `,
-            [user_id, challengeId]
-        );
+      [user_id, challengeId]
+    );
 
-        const updatedUserChallenge = updateResult.rows[0];
-        
-        // 3. Verificar si se completó el reto y actualizar el estado
-        if (updatedUserChallenge.progress_count >= duration_days && updatedUserChallenge.status !== 'completed') {
-            await client.query(
-                "UPDATE user_challenges SET status = 'completed' WHERE user_id = $1 AND challenge_id = $2",
-                [user_id, challengeId]
-            );
-            updatedUserChallenge.status = 'completed';
-        }
-        
-        res.status(200).json(updatedUserChallenge);
+    const updatedUserChallenge = updateResult.rows[0];
 
-    } catch (err) {
-        console.error("Error al marcar el progreso:", err.message);
-        res.status(500).json({ message: 'Error al marcar el progreso.' });
+    // 3. Verificar si se completó el reto y actualizar el estado
+    if (
+      updatedUserChallenge.progress_count >= duration_days &&
+      updatedUserChallenge.status !== "completed"
+    ) {
+      await client.query(
+        "UPDATE user_challenges SET status = 'completed' WHERE user_id = $1 AND challenge_id = $2",
+        [user_id, challengeId]
+      );
+      updatedUserChallenge.status = "completed";
     }
+
+    res.status(200).json(updatedUserChallenge);
+  } catch (err) {
+    console.error("Error al marcar el progreso:", err.message);
+    res.status(500).json({ message: "Error al marcar el progreso." });
+  }
 });
 
 // 7. Ruta para ver los participantes de un reto (Ruta protegida) 🔒
@@ -184,37 +213,6 @@ router.get("/:id", async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: "Error en el servidor." });
-  }
-});
-
-// 9. Parametros de busqueda
-router.get("/", async (req, res) => {
-  const { search, category_id } = req.query;
-  let query = "SELECT * FROM challenges WHERE is_active = TRUE";
-  const values = [];
-  let paramIndex = 1;
-
-  if (search) {
-    query += ` AND title ILIKE $${paramIndex}`;
-    values.push(`%${search}%`);
-    paramIndex++;
-  }
-
-  if (category_id) {
-    query += ` AND category_id = $${paramIndex}`;
-    values.push(category_id);
-  }
-
-  query += " ORDER BY created_at DESC";
-
-  try {
-    const result = await client.query(query, values);
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error(err.message);
-    res
-      .status(500)
-      .json({ message: "Error en el servidor al obtener los retos." });
   }
 });
 
