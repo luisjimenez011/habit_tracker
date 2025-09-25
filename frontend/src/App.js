@@ -16,6 +16,7 @@ import UserChallenges from './pages/UserChallenges';
 import CompletedChallenges from './pages/CompletedChallenges';
 import CreateChallenge from './pages/CreateChallenge';
 import ChallengeDetails from './pages/ChallengeDetails';
+import PublicProfile from './pages/PublicProfile';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/create-challenge" element={<CreateChallenge />} />
             <Route path="/challenges/:challengeId/participants" element={<ChallengeParticipants />} />
             <Route path="/challenges/:challengeId" element={<ChallengeDetails />} />
+            <Route path="/profile/:id" element={<PublicProfile />} />
 
             {/* Rutas que requieren autenticación */}
             <Route path="/user-profile" element={<UserProfile />} />

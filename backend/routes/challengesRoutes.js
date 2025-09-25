@@ -29,25 +29,25 @@ router.post("/", auth, async (req, res) => {
 // GET /api/challenges?search=termino&category_id=X
 router.get("/", async (req, res) => {
   // Extraemos los parámetros de la URL. Si no existen, son undefined.
-  const { search, category_id } = req.query; // Base de la consulta: Incluimos el nombre de la categoría y solo retos activos. // Usamos LEFT JOIN para obtener la categoría.
+  const { search, category_id } = req.query; 
 
   let query =
-    "SELECT c.*, cat.name as category_name FROM challenges c LEFT JOIN categories cat ON c.category_id = cat.id WHERE c.is_active = TRUE";
-  const values = []; // Almacena los valores para evitar inyección SQL
-  let paramIndex = 1; // 1. FILTRO DE BÚSQUEDA por título (Search Term)
+    "SELECT c.*, cat.name as category_name, u.username as creator_username FROM challenges c LEFT JOIN categories cat ON c.category_id = cat.id LEFT JOIN users u ON c.creator_id = u.id WHERE c.is_active = TRUE";
+  const values = [];
+  let paramIndex = 1;
 
   if (search) {
-    // ILIKE: Búsqueda insensible a mayúsculas/minúsculas. %: comodín.
     query += ` AND c.title ILIKE $${paramIndex}`;
     values.push(`%${search}%`);
     paramIndex++;
-  } // 2. FILTRO DE CATEGORÍA // category_id !== '' maneja el caso donde el usuario selecciona "Todas las categorías" (value="")
+  }
 
   if (category_id && category_id !== "") {
     query += ` AND c.category_id = $${paramIndex}`;
     values.push(category_id);
     paramIndex++;
-  } // Ordenamos por fecha de creación (los más nuevos primero)
+  }
+
   query += " ORDER BY c.created_at DESC";
 
   try {
