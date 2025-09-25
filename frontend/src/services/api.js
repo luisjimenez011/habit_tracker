@@ -81,6 +81,11 @@ export const getUserChallenges = () => {
     return api.get('/challenges/me');
 };
 
+// Función para obtener los retos creados
+export const getCreatedChallenges = () => {
+    return api.get('/challenges/created');
+};
+
 // Función para marcar el progreso de un reto (requiere autenticación)
 export const markChallengeProgress = (challengeId) => {
     return api.put(`/challenges/${challengeId}/progress`, {});
