@@ -29,7 +29,7 @@ router.post("/", auth, async (req, res) => {
 // GET /api/challenges?search=termino&category_id=X
 router.get("/", async (req, res) => {
   // Extraemos los parámetros de la URL. Si no existen, son undefined.
-  const { search, category_id } = req.query; 
+  const { search, category_id } = req.query;
 
   let query =
     "SELECT c.*, cat.name as category_name, u.username as creator_username FROM challenges c LEFT JOIN categories cat ON c.category_id = cat.id LEFT JOIN users u ON c.creator_id = u.id WHERE c.is_active = TRUE";
@@ -118,9 +118,10 @@ router.put("/:id/progress", auth, async (req, res) => {
   const today = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD
 
   try {
-    // 1. Obtener datos del reto y verificar la última fecha de progreso
+   // 1. Obtener datos del reto y verificar la última fecha de progreso
     const checkResult = await client.query(
-      "SELECT duration_days, progress_count, last_progress_date FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
+      // Usa TO_CHAR para obtener la fecha de progreso como una cadena simple 'YYYY-MM-DD'
+      "SELECT c.duration_days, uc.progress_count, TO_CHAR(uc.last_progress_date, 'YYYY-MM-DD') AS last_progress_date_str FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
       [user_id, challengeId]
     );
 
@@ -128,14 +129,12 @@ router.put("/:id/progress", auth, async (req, res) => {
       return res.status(404).json({ message: "Usuario no unido a este reto." });
     }
 
-    const { duration_days, progress_count, last_progress_date } = checkResult.rows[0];
+    // CAMBIO CRUCIAL: Usamos la propiedad que devuelve la consulta: last_progress_date_str
+    const { duration_days, progress_count, last_progress_date_str } =
+      checkResult.rows[0]; 
 
-    // Compara solo la fecha para evitar doble check-in
-    const lastProgressDateStr = last_progress_date
-      ? new Date(last_progress_date).toISOString().split("T")[0]
-      : null;
-
-    if (lastProgressDateStr === today) {
+    // Compara la cadena simple 'YYYY-MM-DD' de la base de datos con la de hoy
+    if (last_progress_date_str === today) {
       return res.status(400).json({
         message: "Ya marcaste tu progreso para este reto hoy. Vuelve mañana.",
       });
@@ -147,29 +146,26 @@ router.put("/:id/progress", auth, async (req, res) => {
       });
     }
 
-    // INICIO DE LA TRANSACCIÓN: Asegura que todo se complete o nada se haga
-    await client.query("BEGIN"); 
+    // INICIO DE LA TRANSACCIÓN: Asegura que todo se complete o nada se haga
+    await client.query("BEGIN"); 
 
-    // 2. Actualizar el contador de progreso y la fecha
+    // 2. Actualizar el contador de progreso y la fecha (ahora es seguro)
     const updateResult = await client.query(
-      `
-            UPDATE user_challenges 
-            SET progress_count = progress_count + 1, last_progress_date = NOW()
-            WHERE user_id = $1 AND challenge_id = $2 RETURNING *
-            `,
+      `UPDATE user_challenges 
+SET progress_count = progress_count + 1, last_progress_date = NOW()
+WHERE user_id = $1 AND challenge_id = $2 RETURNING *`, 
       [user_id, challengeId]
     );
 
     const updatedUserChallenge = updateResult.rows[0];
 
-    // 🔑 PUNTOS POR PROGRESO DIARIO: Otorga 10 puntos.
-    await client.query(
-        "UPDATE users SET points = points + 10 WHERE id = $1", 
-        [user_id]
-    );
+    // 🔑 PUNTOS POR PROGRESO DIARIO: Otorga 10 puntos.
+    await client.query("UPDATE users SET points = points + 10 WHERE id = $1", [
+      user_id,
+    ]);
 
-    let pointsGained = 10;
-    
+    let pointsGained = 10; 
+
     // 3. Verificar si se completó el reto y actualizar el estado
     if (
       updatedUserChallenge.progress_count >= duration_days &&
@@ -181,30 +177,31 @@ router.put("/:id/progress", auth, async (req, res) => {
       );
       updatedUserChallenge.status = "completed";
 
-      // 🔑 PUNTOS POR COMPLETAR EL RETO: Otorga 50 puntos extra.
-      const completionPoints = 50;
-      await client.query(
-          "UPDATE users SET points = points + $1 WHERE id = $2", 
-          [completionPoints, user_id]
-      );
-      pointsGained += completionPoints;
+      // 🔑 PUNTOS POR COMPLETAR EL RETO: Otorga 50 puntos extra.
+      const completionPoints = 50;
+      await client.query(
+        "UPDATE users SET points = points + $1 WHERE id = $2",
+        [completionPoints, user_id]
+      );
+      pointsGained += completionPoints;
     }
 
-    // FINALIZA LA TRANSACCIÓN
-    await client.query("COMMIT");
-    
-    // Devuelve los puntos ganados para que el frontend pueda mostrarlos
+    // FINALIZA LA TRANSACCIÓN
+    await client.query("COMMIT");
+
+    // Devuelve los puntos ganados para que el frontend pueda mostrarlos
     res.status(200).json({
-        ...updatedUserChallenge,
-        points_gained: pointsGained,
-    });
+      ...updatedUserChallenge,
+      points_gained: pointsGained,
+    });
   } catch (err) {
-    // Si algo falla, deshace todas las operaciones SQL
-    await client.query("ROLLBACK"); 
+    // Si algo falla, deshace todas las operaciones SQL
+    await client.query("ROLLBACK");
     console.error("Error al marcar el progreso:", err.message);
     res.status(500).json({ message: "Error al marcar el progreso." });
   }
 });
+
 
 // 7. Ruta para ver los participantes de un reto (Ruta protegida) 🔒
 // GET /api/challenges/:id/participants
@@ -227,20 +224,19 @@ router.get("/:id/participants", auth, async (req, res) => {
 // 8. Obtener los retos creados por el usuario autenticado (Ruta protegida) 🔒
 // GET /api/challenges/created
 router.get("/created", auth, async (req, res) => {
-  const creator_id = req.user.id;
-  try {
-    const result = await client.query(
-      // 🔑 IMPORTANTE: Añadida 'duration_days' al SELECT
-      "SELECT id, title, description, created_at, is_active, duration_days FROM challenges WHERE creator_id = $1 ORDER BY created_at DESC",
-      [creator_id]
-    );
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error("Error al obtener los retos creados:", err.message);
-    res.status(500).json({ message: "Error en el servidor." });
-  }
+  const creator_id = req.user.id;
+  try {
+    const result = await client.query(
+      // 🔑 IMPORTANTE: Añadida 'duration_days' al SELECT
+      "SELECT id, title, description, created_at, is_active, duration_days FROM challenges WHERE creator_id = $1 ORDER BY created_at DESC",
+      [creator_id]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error al obtener los retos creados:", err.message);
+    res.status(500).json({ message: "Error en el servidor." });
+  }
 });
-
 
 // 9. Obtener los detalles de un solo reto (Ruta dinámica)
 // GET /api/challenges/:id
@@ -260,6 +256,5 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Error en el servidor." });
   }
 });
-
 
 module.exports = router;

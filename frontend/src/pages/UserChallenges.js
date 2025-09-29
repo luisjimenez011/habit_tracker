@@ -1,58 +1,72 @@
-// frontend/src/pages/UserChallenges.js (VERSIÓN FINAL Y ESTILIZADA)
-
-import React, { useContext } from "react";
+// frontend/src/pages/UserChallenges.js
+import React, { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Container,
-  Card,
-  Row,
-  Col,
-  Alert,
-  Button,
-  ProgressBar,
+  Container,
+  Card,
+  Row,
+  Col,
+  Alert,
+  Button,
+  ProgressBar,
 } from "react-bootstrap";
 import { AuthContext } from "../context/AuthContext";
 import { markChallengeProgress } from "../services/api";
 
 const UserChallenges = () => {
-  const { user, loading, userChallenges, refreshUserChallenges } =
-    useContext(AuthContext);
+  const { user, loading, userChallenges, refreshUserChallenges } =
+    useContext(AuthContext);
 
-  const handleMarkProgress = async (challengeId) => {
-    try {
-      // La ruta es /api/challenges/:id/progress, por lo que usamos 'markChallengeProgress'
-      await markChallengeProgress(challengeId);
-      alert("¡Progreso actualizado!");
-      // 🔑 REFRESCAR: Llama a la función del contexto para actualizar la lista
-      refreshUserChallenges();
-    } catch (error) {
-      console.error("Error al marcar el progreso:", error.response.data);
-      const errorMessage =
-        error.response?.data?.message || "Error al marcar el progreso.";
-      alert(errorMessage);
+  // Nuevo estado para controlar la carga del botón (usando el ID del reto como clave)
+  const [isMarkingProgress, setIsMarkingProgress] = useState({});
+
+  const handleMarkProgress = async (challengeId) => {
+    // 1. Bloqueo inicial del botón para este reto
+    setIsMarkingProgress(prev => ({ ...prev, [challengeId]: true })); 
+
+    try {
+      // La ruta es /api/challenges/:id/progress
+      const response = await markChallengeProgress(challengeId);
+      
+      let message = "¡Progreso actualizado!";
+      if (response.points_gained > 0) {
+          message += ` Ganaste ${response.points_gained} puntos.`;
+      }
+      alert(message);
+      
+      // 🔑 REFRESCAR: Llama a la función del contexto para actualizar la lista
+      refreshUserChallenges();
+    } catch (error) {
+      console.error("Error al marcar el progreso:", error.response);
+      const errorMessage =
+        error.response?.data?.message || "Error al marcar el progreso.";
+      alert(errorMessage);
+    } finally {
+      // 2. Desbloqueo final del botón para este reto
+      setIsMarkingProgress(prev => ({ ...prev, [challengeId]: false })); 
     }
-  };
+  };
 
-  if (loading) {
-    return (
-      <Container className="my-5">
-        <p>Cargando retos...</p>
-      </Container>
-    );
-  }
+  if (loading) {
+    return (
+      <Container className="my-5">
+        <p>Cargando retos...</p>
+      </Container>
+    );
+  }
 
-  if (!user) {
-    return (
-      <Alert variant="warning" className="m-5 text-center">
-        Por favor, inicia sesión para ver tus retos.
-      </Alert>
-    );
-  }
+  if (!user) {
+    return (
+      <Alert variant="warning" className="m-5 text-center">
+        Por favor, inicia sesión para ver tus retos.
+      </Alert>
+    );
+  }
 
-  // Filtramos solo los retos que no están completados
-  const challengesInProgress = userChallenges.filter(
-    (c) => c.status !== "completed"
-  );
+  // Filtramos solo los retos que no están completados
+  const challengesInProgress = userChallenges.filter(
+    (c) => c.status !== "completed"
+  );
 
   return (
     <Container className="my-5">
