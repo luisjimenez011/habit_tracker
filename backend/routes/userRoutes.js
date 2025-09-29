@@ -67,7 +67,7 @@ router.get("/me", auth, async (req, res) => {
   try {
     const user_id = req.user.id;
     const result = await client.query(
-      "SELECT id, username, email, points, created_at FROM users WHERE id = $1",
+      "SELECT id, username, email, points, created_at FROM users WHERE id = $1", // ⬅️ Asegurado que 'points' está en el SELECT
       [user_id]
     );
     res.status(200).json(result.rows[0]);
@@ -131,7 +131,7 @@ router.delete("/me", auth, async (req, res) => {
 router.get("/ranking", async (req, res) => {
   try {
     const result = await client.query(
-      "SELECT username, points FROM users ORDER BY points DESC, created_at ASC"
+      "SELECT id, username, points FROM users ORDER BY points DESC, created_at ASC"
     );
     res.status(200).json(result.rows);
   } catch (err) {

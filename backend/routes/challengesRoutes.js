@@ -113,70 +113,97 @@ router.post("/:id/join", auth, async (req, res) => {
 // 6. Marcar el progreso de un reto (Ruta protegida) 🔒
 // PUT /api/challenges/:id/progress
 router.put("/:id/progress", auth, async (req, res) => {
-  const { id: challengeId } = req.params;
-  const user_id = req.user.id;
-  const today = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD
+  const { id: challengeId } = req.params;
+  const user_id = req.user.id;
+  const today = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD
 
-  try {
-    // 1. Obtener datos del reto y verificar la última fecha de progreso
-    const checkResult = await client.query(
-      "SELECT duration_days, progress_count, last_progress_date FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
-      [user_id, challengeId]
+  try {
+    // 1. Obtener datos del reto y verificar la última fecha de progreso
+    const checkResult = await client.query(
+      "SELECT duration_days, progress_count, last_progress_date FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
+      [user_id, challengeId]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ message: "Usuario no unido a este reto." });
+    }
+
+    const { duration_days, progress_count, last_progress_date } = checkResult.rows[0];
+
+    // Compara solo la fecha para evitar doble check-in
+    const lastProgressDateStr = last_progress_date
+      ? new Date(last_progress_date).toISOString().split("T")[0]
+      : null;
+
+    if (lastProgressDateStr === today) {
+      return res.status(400).json({
+        message: "Ya marcaste tu progreso para este reto hoy. Vuelve mañana.",
+      });
+    }
+
+    if (progress_count >= duration_days) {
+      return res.status(400).json({
+        message: "¡Reto completado! No puedes seguir registrando progreso.",
+      });
+    }
+
+    // INICIO DE LA TRANSACCIÓN: Asegura que todo se complete o nada se haga
+    await client.query("BEGIN"); 
+
+    // 2. Actualizar el contador de progreso y la fecha
+    const updateResult = await client.query(
+      `
+            UPDATE user_challenges 
+            SET progress_count = progress_count + 1, last_progress_date = NOW()
+            WHERE user_id = $1 AND challenge_id = $2 RETURNING *
+            `,
+      [user_id, challengeId]
+    );
+
+    const updatedUserChallenge = updateResult.rows[0];
+
+    // 🔑 PUNTOS POR PROGRESO DIARIO: Otorga 10 puntos.
+    await client.query(
+        "UPDATE users SET points = points + 10 WHERE id = $1", 
+        [user_id]
     );
 
-    if (checkResult.rows.length === 0) {
-      return res.status(404).json({ message: "Usuario no unido a este reto." });
-    }
+    let pointsGained = 10;
+    
+    // 3. Verificar si se completó el reto y actualizar el estado
+    if (
+      updatedUserChallenge.progress_count >= duration_days &&
+      updatedUserChallenge.status !== "completed"
+    ) {
+      await client.query(
+        "UPDATE user_challenges SET status = 'completed' WHERE user_id = $1 AND challenge_id = $2",
+        [user_id, challengeId]
+      );
+      updatedUserChallenge.status = "completed";
 
-    const { duration_days, progress_count, last_progress_date } =
-      checkResult.rows[0];
-
-    // Compara solo la fecha para evitar doble check-in
-    const lastProgressDateStr = last_progress_date
-      ? new Date(last_progress_date).toISOString().split("T")[0]
-      : null;
-
-    if (lastProgressDateStr === today) {
-      return res.status(400).json({
-        message: "Ya marcaste tu progreso para este reto hoy. Vuelve mañana.",
-      });
-    }
-
-    if (progress_count >= duration_days) {
-      return res.status(400).json({
-        message: "¡Reto completado! No puedes seguir registrando progreso.",
-      });
-    }
-
-    // 2. Actualizar el contador de progreso y la fecha (Usando NOW() para simplicidad o today si prefieres date)
-    const updateResult = await client.query(
-      `
-            UPDATE user_challenges 
-            SET progress_count = progress_count + 1, last_progress_date = NOW()
-            WHERE user_id = $1 AND challenge_id = $2 RETURNING *
-            `,
-      [user_id, challengeId]
-    );
-
-    const updatedUserChallenge = updateResult.rows[0];
-
-    // 3. Verificar si se completó el reto y actualizar el estado
-    if (
-      updatedUserChallenge.progress_count >= duration_days &&
-      updatedUserChallenge.status !== "completed"
-    ) {
+      // 🔑 PUNTOS POR COMPLETAR EL RETO: Otorga 50 puntos extra.
+      const completionPoints = 50;
       await client.query(
-        "UPDATE user_challenges SET status = 'completed' WHERE user_id = $1 AND challenge_id = $2",
-        [user_id, challengeId]
+          "UPDATE users SET points = points + $1 WHERE id = $2", 
+          [completionPoints, user_id]
       );
-      updatedUserChallenge.status = "completed";
-    }
+      pointsGained += completionPoints;
+    }
 
-    res.status(200).json(updatedUserChallenge);
-  } catch (err) {
-    console.error("Error al marcar el progreso:", err.message);
-    res.status(500).json({ message: "Error al marcar el progreso." });
-  }
+    // FINALIZA LA TRANSACCIÓN
+    await client.query("COMMIT");
+    
+    // Devuelve los puntos ganados para que el frontend pueda mostrarlos
+    res.status(200).json({
+        ...updatedUserChallenge,
+        points_gained: pointsGained,
+    });
+  } catch (err) {
+    // Si algo falla, deshace todas las operaciones SQL
+    await client.query("ROLLBACK"); 
+    console.error("Error al marcar el progreso:", err.message);
+    res.status(500).json({ message: "Error al marcar el progreso." });
+  }
 });
 
 // 7. Ruta para ver los participantes de un reto (Ruta protegida) 🔒

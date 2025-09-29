@@ -17,6 +17,7 @@ import CompletedChallenges from './pages/CompletedChallenges';
 import CreateChallenge from './pages/CreateChallenge';
 import ChallengeDetails from './pages/ChallengeDetails';
 import PublicProfile from './pages/PublicProfile';
+import RankingPage from './pages/RankingPage';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/challenges/:challengeId/participants" element={<ChallengeParticipants />} />
             <Route path="/challenges/:challengeId" element={<ChallengeDetails />} />
             <Route path="/profile/:id" element={<PublicProfile />} />
+            <Route path="/ranking" element={<RankingPage />} />
 
             {/* Rutas que requieren autenticación */}
             <Route path="/user-profile" element={<UserProfile />} />

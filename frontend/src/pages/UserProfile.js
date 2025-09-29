@@ -68,9 +68,9 @@ const UserProfile = () => {
                 </Col>
 
                 {/* Tarjetas de Estadísticas */}
-                <Col md={8}>
+                 <Col md={8}>
                     <Row>
-                        <Col sm={4} className="mb-4">
+                        <Col sm={3} className="mb-4"> {/* Reducido a sm={3} para hacer espacio */}
                             <Card className="text-center bg-info text-white shadow-sm">
                                 <Card.Body>
                                     <Card.Title>{activeCount}</Card.Title>
@@ -79,7 +79,7 @@ const UserProfile = () => {
                                 </Card.Body>
                             </Card>
                         </Col>
-                        <Col sm={4} className="mb-4">
+                        <Col sm={3} className="mb-4">
                             <Card className="text-center bg-success text-white shadow-sm">
                                 <Card.Body>
                                     <Card.Title>{completedCount}</Card.Title>
@@ -88,12 +88,23 @@ const UserProfile = () => {
                                 </Card.Body>
                             </Card>
                         </Col>
-                        <Col sm={4} className="mb-4">
+                        {/* 🔑 NUEVA TARJETA DE PUNTOS */}
+                        <Col sm={3} className="mb-4"> 
+                            <Card className="text-center bg-warning text-dark shadow-sm">
+                                <Card.Body>
+                                    <Card.Title>⭐ {user.points || 0}</Card.Title> {/* Muestra los puntos */}
+                                    <Card.Text>Puntos Totales</Card.Text>
+                                    {/* Aquí podrías enlazar al Ranking */}
+                                    <Link to="/ranking" className="stretched-link"></Link> 
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        {/* FIN NUEVA TARJETA DE PUNTOS */}
+                        <Col sm={3} className="mb-4">
                             <Card className="text-center bg-secondary text-white shadow-sm">
                                 <Card.Body>
                                     <Card.Title>{createdChallenges.length}</Card.Title>
                                     <Card.Text>Retos Creados</Card.Text>
-                                    {/* ⬅️ Aquí hemos cambiado el link para que apunte a la sección */}
                                     <Link to="#created-challenges" className="stretched-link"></Link> 
                                 </Card.Body>
                             </Card>
