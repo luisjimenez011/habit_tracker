@@ -186,4 +186,22 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Error en el servidor." });
   }
 });
+
+// RUTA NUEVA: 8. Obtener las insignias del usuario autenticado (Ruta protegida) 🔒
+// GET /api/users/me/badges
+router.get("/me/badges", auth, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    // 🔑 REEMPLAZA LA CONSULTA MULTILÍNEA POR ESTA VERSIÓN LIMPIA:
+    const result = await client.query(
+      `SELECT b.id, b.name, b.description, b.type, b.required_value, ub.awarded_at FROM user_badges ub JOIN badges b ON ub.badge_id = b.id WHERE ub.user_id = $1 ORDER BY ub.awarded_at DESC`,
+      [user_id]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error al obtener las insignias del usuario:", err.message);
+    res.status(500).json({ message: "Error en el servidor." });
+  }
+});
+
 module.exports = router;

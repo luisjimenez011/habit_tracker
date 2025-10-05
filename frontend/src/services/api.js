@@ -117,3 +117,8 @@ export const getComments = (challengeId) => {
 export const addComment = (challengeId, commentData) => {
     return api.post(`/comments/${challengeId}`, commentData);
 };
+
+export const getUserBadges = () => {
+    // ✅ CORRECCIÓN: Usar la instancia 'api' para que el Interceptor añada el token.
+    return api.get("/users/me/badges"); 
+};
