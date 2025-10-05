@@ -81,9 +81,9 @@ const UserProfile = () => {
   ).length;
   const activeCount = userChallenges.filter(
     (c) => c.status !== "completed"
-  ).length; 
+  ).length; // Función de ayuda para formatear el tipo de insignia
   const formatBadgeType = (type) => {
-a
+    // Reemplaza guiones bajos por espacios y capitaliza
     return type
       ? type
           .replace(/_/g, " ")
@@ -123,7 +123,7 @@ a
           <Row>
             <Col sm={3} className="mb-4">
               {" "}
-              
+              {/* Reducido a sm={3} para hacer espacio */}
               <Card className="text-center bg-info text-white shadow-sm">
                 <Card.Body>
                   <Card.Title>{activeCount}</Card.Title>
@@ -218,7 +218,7 @@ a
       </Row>
       {/* FIN NUEVA SECCIÓN */}
       {/* Retos Creados por el Usuario (Lista) */}
-    
+      {/* ⬅️ Hemos añadido este id para el enlace */}
       <h3 className="mb-3" id="created-challenges">
         Tus Retos Publicados ({createdChallenges.length})
       </h3>
