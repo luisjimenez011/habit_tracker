@@ -1,4 +1,3 @@
-// frontend/src/components/CommentsSection.js
 import React, { useState, useEffect, useContext } from 'react';
 import { getComments, addComment } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -74,10 +73,10 @@ const CommentsSection = ({ challengeId }) => {
                     comments.map(comment => (
                         <ListGroup.Item key={comment.id} className="d-flex justify-content-between align-items-start">
                             <div className="ms-2 me-auto">
-                                {/* Nombre de usuario: Correcto, usa 'username' */}
+                              
                                 <div className="fw-bold">{comment.username || 'Usuario desconocido'}</div>
                                 
-                                {/* 🔑 CORRECCIÓN AQUÍ: Usamos 'comment_text' */}
+                                
                                 {comment.comment_text}
                             </div>
                             <small className="text-muted">{new Date(comment.created_at).toLocaleDateString()}</small>

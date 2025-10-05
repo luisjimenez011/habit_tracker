@@ -1,4 +1,3 @@
-// frontend/src/pages/UserChallenges.js
 import React, { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -118,7 +117,7 @@ const UserChallenges = () => {
                       variant="success"
                       onClick={() => handleMarkProgress(challenge.id)}
                       className="w-100 mt-2"
-                      // El backend se encarga de validar si ya se hizo check-in hoy, aquí solo evitamos el clic si ya está completado
+                      
                       disabled={daysLeft <= 0}
                     >
                       Marcar Progreso de Hoy

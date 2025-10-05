@@ -1,4 +1,3 @@
-// src/App.js
 import React from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -22,7 +21,7 @@ import RankingPage from './pages/RankingPage';
 function App() {
   return (
     <Router>
-      <AuthProvider> {/* CORRECTO: El proveedor envuelve a toda la aplicación */}
+      <AuthProvider> 
         <Navbar /> {/* Se renderiza en todas las páginas */}
         <main>
           <Routes>

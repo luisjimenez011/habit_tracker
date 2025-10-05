@@ -1,4 +1,3 @@
-// frontend/src/pages/RankingPage.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Container, Card, Table, Alert, Spinner } from "react-bootstrap";

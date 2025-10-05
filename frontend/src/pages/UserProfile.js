@@ -1,8 +1,5 @@
-// frontend/src/pages/UserProfile.js
-
 import React, { useContext, useState, useEffect, useCallback } from "react";
 import { AuthContext } from "../context/AuthContext";
-// Asegúrate de importar la nueva función getUserBadges
 import { getCreatedChallenges, getUserBadges } from "../services/api";
 import {
   Container,
@@ -23,9 +20,9 @@ const UserProfile = () => {
     userChallenges,
   } = useContext(AuthContext);
   const [createdChallenges, setCreatedChallenges] = useState([]);
-  const [loadingCreated, setLoadingCreated] = useState(true); // 🔑 NUEVOS ESTADOS PARA INSIGNIAS
+  const [loadingCreated, setLoadingCreated] = useState(true); 
   const [badges, setBadges] = useState([]);
-  const [badgesLoading, setBadgesLoading] = useState(true); // 1. Lógica de fetching memorizada (Retos Creados).
+  const [badgesLoading, setBadgesLoading] = useState(true); 
 
   const fetchCreatedChallenges = useCallback(async () => {
     if (user) {
@@ -41,7 +38,7 @@ const UserProfile = () => {
     } else {
       setLoadingCreated(false);
     }
-  }, [user]); // 🔑 NUEVA FUNCIÓN MEMORIZADA PARA INSIGNIAS
+  }, [user]); 
 
   const fetchUserBadges = useCallback(async () => {
     if (user) {
@@ -57,12 +54,12 @@ const UserProfile = () => {
     } else {
       setBadgesLoading(false);
     }
-  }, [user]); // 2. Ejecutar las funciones cuando el componente se monta/user está listo.
+  }, [user]); 
 
   useEffect(() => {
     fetchCreatedChallenges();
-    fetchUserBadges(); // 🔑 Llamada a la nueva función
-  }, [fetchCreatedChallenges, fetchUserBadges]); // La carga global ahora espera que las insignias también carguen
+    fetchUserBadges(); 
+  }, [fetchCreatedChallenges, fetchUserBadges]); 
 
   if (authLoading || loadingCreated || badgesLoading) {
     return (
@@ -84,9 +81,9 @@ const UserProfile = () => {
   ).length;
   const activeCount = userChallenges.filter(
     (c) => c.status !== "completed"
-  ).length; // Función de ayuda para formatear el tipo de insignia
+  ).length; 
   const formatBadgeType = (type) => {
-    // Reemplaza guiones bajos por espacios y capitaliza
+a
     return type
       ? type
           .replace(/_/g, " ")
@@ -126,7 +123,7 @@ const UserProfile = () => {
           <Row>
             <Col sm={3} className="mb-4">
               {" "}
-              {/* Reducido a sm={3} para hacer espacio */}
+              
               <Card className="text-center bg-info text-white shadow-sm">
                 <Card.Body>
                   <Card.Title>{activeCount}</Card.Title>
@@ -221,7 +218,7 @@ const UserProfile = () => {
       </Row>
       {/* FIN NUEVA SECCIÓN */}
       {/* Retos Creados por el Usuario (Lista) */}
-      {/* ⬅️ Hemos añadido este id para el enlace */}
+    
       <h3 className="mb-3" id="created-challenges">
         Tus Retos Publicados ({createdChallenges.length})
       </h3>

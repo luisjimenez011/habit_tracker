@@ -1,4 +1,3 @@
-// frontend/src/pages/ChallengeList.js
 import React, { useState, useEffect, useContext } from "react";
 import { getChallenges, getCategories, joinChallenge } from "../services/api";
 import { AuthContext } from "../context/AuthContext";
@@ -23,7 +22,7 @@ const ChallengeList = () => {
         });
         setChallenges(challengesResponse.data);
 
-        // Obtener la lista de categorías (solo la primera vez)
+        // Obtener la lista de categorías 
         if (categories.length === 0) {
           const categoriesResponse = await getCategories();
           setCategories(categoriesResponse.data);

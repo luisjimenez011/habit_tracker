@@ -1,4 +1,3 @@
-// frontend/src/services/api.js
 import axios from 'axios';
 
 // Configuración de la URL base de la API

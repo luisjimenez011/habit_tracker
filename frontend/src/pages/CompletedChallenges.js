@@ -1,5 +1,3 @@
-// frontend/src/pages/CompletedChallenges.js
-
 import React, { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Container, Card, Row, Col, Alert } from 'react-bootstrap';
@@ -30,7 +28,7 @@ const CompletedChallenges = () => {
             ) : (
                 <Row xs={1} md={2} lg={3} className="g-4">
                     {completedChallenges.map(challenge => {
-                        // El reto completado tiene progress_count === duration_days
+                        
                         const completionDate = challenge.last_progress_date 
                             ? new Date(challenge.last_progress_date).toLocaleDateString() 
                             : 'N/A';

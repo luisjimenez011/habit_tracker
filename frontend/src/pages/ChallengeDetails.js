@@ -1,4 +1,3 @@
-// frontend/src/pages/ChallengeDetails.js
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getChallengeDetails, joinChallenge } from '../services/api';
@@ -69,7 +68,7 @@ const ChallengeDetails = () => {
                 </Card.Body>
             </Card>
 
-            {/* Aquí añadiremos la sección de comentarios más adelante */}
+           
              <CommentsSection challengeId={challenge.id} /> 
         </Container>
     );

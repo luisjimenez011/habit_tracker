@@ -1,4 +1,3 @@
-// backend/routes/usersRoutes.js
 const express = require("express");
 const client = require("../database");
 const bcrypt = require("bcryptjs");
@@ -61,13 +60,13 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// 3. Obtener los datos del perfil del usuario autenticado (Ruta estática) 🔒
+// 3. Obtener los datos del perfil del usuario autenticado (Ruta estática) 
 // GET /api/users/me
 router.get("/me", auth, async (req, res) => {
   try {
     const user_id = req.user.id;
     const result = await client.query(
-      "SELECT id, username, email, points, created_at FROM users WHERE id = $1", // ⬅️ Asegurado que 'points' está en el SELECT
+      "SELECT id, username, email, points, created_at FROM users WHERE id = $1", 
       [user_id]
     );
     res.status(200).json(result.rows[0]);
@@ -77,7 +76,7 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
-// 4. Cambiar información del Usuario (Ruta estática) 🔒
+// 4. Cambiar información del Usuario (Ruta estática) 
 // PUT /api/users/me
 router.put("/me", auth, async (req, res) => {
   const { username } = req.body;
@@ -104,7 +103,7 @@ router.put("/me", auth, async (req, res) => {
   }
 });
 
-// 5. Eliminar la Cuenta (Ruta estática) 🔒
+// 5. Eliminar la Cuenta (Ruta estática) 
 // DELETE /api/users/me
 router.delete("/me", auth, async (req, res) => {
   const user_id = req.user.id;
@@ -147,7 +146,7 @@ router.get("/ranking", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Obtener la información pública del usuario
+    //Obtener la información pública del usuario
     const userResult = await client.query(
       "SELECT id, username, created_at FROM users WHERE id = $1",
       [id]
@@ -162,7 +161,7 @@ router.get("/:id", async (req, res) => {
     const challengesResult = await client.query(
       "SELECT id, title, description, duration_days FROM challenges WHERE creator_id = $1 AND is_active = TRUE ORDER BY created_at DESC",
       [id]
-    ); // 3. Obtener el conteo de retos que ha completado
+    ); //  Obtener el conteo de retos que ha completado
 
     const completedCountResult = await client.query(
       "SELECT COUNT(*) FROM user_challenges WHERE user_id = $1 AND status = 'completed'",
@@ -171,7 +170,7 @@ router.get("/:id", async (req, res) => {
     const completedChallengesCount = parseInt(
       completedCountResult.rows[0].count,
       10
-    ); // 4. Devolver la información consolidada en el formato que el frontend espera
+    ); // Devolver la información consolidada en el formato que el frontend espera
 
     res.status(200).json({
       user: publicUser,
@@ -187,12 +186,11 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// RUTA NUEVA: 8. Obtener las insignias del usuario autenticado (Ruta protegida) 🔒
+// RUTA NUEVA: 8. Obtener las insignias del usuario autenticado (Ruta protegida) 
 // GET /api/users/me/badges
 router.get("/me/badges", auth, async (req, res) => {
   try {
     const user_id = req.user.id;
-    // 🔑 REEMPLAZA LA CONSULTA MULTILÍNEA POR ESTA VERSIÓN LIMPIA:
     const result = await client.query(
       `SELECT b.id, b.name, b.description, b.type, b.required_value, ub.awarded_at FROM user_badges ub JOIN badges b ON ub.badge_id = b.id WHERE ub.user_id = $1 ORDER BY ub.awarded_at DESC`,
       [user_id]

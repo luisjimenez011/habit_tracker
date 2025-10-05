@@ -16,7 +16,6 @@ router.post("/", auth, async (req, res) => {
       [title, description, duration_days, creator_id, category_id]
     );
 
-    // INICIO LÓGICA DE INSIGNIAS POR CREACIÓN
     // 1. Obtener contadores actualizados
     const userStatsResult = await client.query(
       "SELECT points, created_at, (SELECT COUNT(*) FROM user_challenges WHERE user_id = $1 AND status = 'completed') AS completed_count FROM users WHERE id = $1",
@@ -35,19 +34,18 @@ router.post("/", auth, async (req, res) => {
     const timeDiff = new Date().getTime() - new Date(created_at).getTime();
     const daysSinceSignup = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
-    // 2. Llamar al verificador de insignias
+    //Llamar al verificador de insignias
     const newBadges = await checkAndAwardBadges(creator_id, {
       points: parseInt(points),
       completed_count: parseInt(completed_count),
       created_count: created_count,
       days_since_signup: daysSinceSignup,
     });
-    // FIN LÓGICA DE INSIGNIAS POR CREACIÓN
 
     res.status(201).json({
       message: "Reto creado exitosamente",
       challenge: newChallenge.rows[0],
-      new_badges_awarded: newBadges, // Nuevo: Devolver insignias ganadas
+      new_badges_awarded: newBadges,
     });
   } catch (err) {
     console.error(err.message);
@@ -145,22 +143,21 @@ router.post("/:id/join", auth, async (req, res) => {
 router.put("/:id/progress", auth, async (req, res) => {
   const { id: challengeId } = req.params;
   const user_id = req.user.id;
-  const today = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD
+  const today = new Date().toISOString().split("T")[0];
 
   try {
-    // 1. Obtener datos del reto y verificar la última fecha de progreso
+    //Obtener datos del reto y verificar la última fecha de progreso
     const checkResult = await client.query(
-      // Usa TO_CHAR para obtener la fecha de progreso como una cadena simple 'YYYY-MM-DD'
       "SELECT c.duration_days, uc.progress_count, TO_CHAR(uc.last_progress_date, 'YYYY-MM-DD') AS last_progress_date_str FROM user_challenges uc JOIN challenges c ON uc.challenge_id = c.id WHERE uc.user_id = $1 AND uc.challenge_id = $2",
       [user_id, challengeId]
     );
 
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ message: "Usuario no unido a este reto." });
-    } // CAMBIO CRUCIAL: Usamos la propiedad que devuelve la consulta: last_progress_date_str
+    }
 
     const { duration_days, progress_count, last_progress_date_str } =
-      checkResult.rows[0]; // Compara la cadena simple 'YYYY-MM-DD' de la base de datos con la de hoy
+      checkResult.rows[0];
 
     if (last_progress_date_str === today) {
       return res.status(400).json({
@@ -172,9 +169,9 @@ router.put("/:id/progress", auth, async (req, res) => {
       return res.status(400).json({
         message: "¡Reto completado! No puedes seguir registrando progreso.",
       });
-    } // INICIO DE LA TRANSACCIÓN
+    }
 
-    await client.query("BEGIN"); // 2. Actualizar el contador de progreso y la fecha (ahora es seguro)
+    await client.query("BEGIN"); //Actualizar el contador de progreso y la fecha
 
     const updateResult = await client.query(
       `UPDATE user_challenges 
@@ -183,13 +180,13 @@ WHERE user_id = $1 AND challenge_id = $2 RETURNING *`,
       [user_id, challengeId]
     );
 
-    const updatedUserChallenge = updateResult.rows[0]; // 🔑 PUNTOS POR PROGRESO DIARIO: Otorga 10 puntos.
+    const updatedUserChallenge = updateResult.rows[0]; //PUNTOS POR PROGRESO DIARIO: Otorga 10 puntos.
 
     await client.query("UPDATE users SET points = points + 10 WHERE id = $1", [
       user_id,
     ]);
 
-    let pointsGained = 10; // 3. Verificar si se completó el reto y actualizar el estado
+    let pointsGained = 10; //Verificar si se completó el reto y actualizar el estado
 
     if (
       updatedUserChallenge.progress_count >= duration_days &&
@@ -199,7 +196,7 @@ WHERE user_id = $1 AND challenge_id = $2 RETURNING *`,
         "UPDATE user_challenges SET status = 'completed' WHERE user_id = $1 AND challenge_id = $2",
         [user_id, challengeId]
       );
-      updatedUserChallenge.status = "completed"; // 🔑 PUNTOS POR COMPLETAR EL RETO: Otorga 50 puntos extra.
+      updatedUserChallenge.status = "completed"; //PUNTOS POR COMPLETAR EL RETO: Otorga 50 puntos extra.
 
       const completionPoints = 50;
       await client.query(
@@ -207,65 +204,52 @@ WHERE user_id = $1 AND challenge_id = $2 RETURNING *`,
         [completionPoints, user_id]
       );
       pointsGained += completionPoints;
-    } // FINALIZA LA TRANSACCIÓN
+    }
 
-    await client.query("COMMIT");
+    await client.query("COMMIT"); // CÁLCULO DE RACHA (STREAK_DAYS)
 
-       // INICIO LÓGICA DE INSIGNIAS POR PROGRESO
+    let currentStreak = 0; // Obtenemos todos los días con progreso único para calcular la racha
+    const allProgressDatesResult = await client.query(
+      "SELECT DISTINCT DATE(last_progress_date) AS progress_day FROM user_challenges WHERE user_id = $1 AND last_progress_date IS NOT NULL ORDER BY progress_day DESC",
+      [user_id]
+    );
+    const progressDays = allProgressDatesResult.rows.map(
+      (row) => new Date(row.progress_day)
+    );
+    const nowForStreak = new Date();
+    nowForStreak.setHours(0, 0, 0, 0); // Limpiamos la hora para la comparación de días
 
-    // 🔑 1. CÁLCULO DE RACHA (STREAK_DAYS)
-    let currentStreak = 0;
-    
-    // Obtenemos todos los días con progreso único para calcular la racha
-    const allProgressDatesResult = await client.query(
-        "SELECT DISTINCT DATE(last_progress_date) AS progress_day FROM user_challenges WHERE user_id = $1 AND last_progress_date IS NOT NULL ORDER BY progress_day DESC",
-        [user_id]
-    );
-    const progressDays = allProgressDatesResult.rows.map(row => new Date(row.progress_day));
-    
-    // --- CAMBIO AQUÍ: Usamos un nuevo nombre de variable ---
-    const nowForStreak = new Date(); 
-    nowForStreak.setHours(0, 0, 0, 0); // Limpiamos la hora para la comparación de días
+    if (progressDays.length > 0) {
+      currentStreak = 1;
+      let expectedDate = nowForStreak;
+      for (let i = 1; i < progressDays.length; i++) {
+        const prevDate = progressDays[i];
+        prevDate.setHours(0, 0, 0, 0);
 
-    if (progressDays.length > 0) {
-        // Verificamos si el progreso más reciente fue ayer o si es la primera vez
-        
-        // Si la fecha más reciente en la BD es hoy (lo cual ya está chequeado y validado en el primer bloque
-        // por la variable 'today' en formato string), la racha comienza en 1.
-        currentStreak = 1; 
-        
-        let expectedDate = nowForStreak; // Usamos el nuevo nombre aquí
-        
-        for (let i = 1; i < progressDays.length; i++) {
-            const prevDate = progressDays[i];
-            prevDate.setHours(0, 0, 0, 0);
+        const dayBeforeExpected = new Date(expectedDate);
+        dayBeforeExpected.setDate(expectedDate.getDate() - 1);
+        dayBeforeExpected.setHours(0, 0, 0, 0);
 
-            const dayBeforeExpected = new Date(expectedDate);
-            dayBeforeExpected.setDate(expectedDate.getDate() - 1);
-            dayBeforeExpected.setHours(0, 0, 0, 0);
+        if (prevDate.getTime() === dayBeforeExpected.getTime()) {
+          currentStreak++;
+          expectedDate = prevDate;
+        } else if (prevDate.getTime() < dayBeforeExpected.getTime()) {
+          break;
+        }
+      }
+    }
 
-            if (prevDate.getTime() === dayBeforeExpected.getTime()) {
-                currentStreak++;
-                expectedDate = prevDate;
-            } else if (prevDate.getTime() < dayBeforeExpected.getTime()) {
-                break;
-            }
-        }
-    }
-
-
-    // 🔑 2. LÓGICA DE TIEMPO ESPECIAL (SPECIAL_TIME)
-    const now = new Date(); // Hora actual del servidor
+    //  LÓGICA DE TIEMPO ESPECIAL (SPECIAL_TIME)
+    const now = new Date();
     const hour = now.getHours();
 
-    const isEarlyBird = (hour < 6); // Madrugador (antes de las 6 AM)
-    // Noctámbulo (después de las 10 PM O entre 12 AM y 4 AM)
-    const isNightOwl = (hour >= 22 || (hour >= 0 && hour < 4)); 
+    const isEarlyBird = hour < 6;
 
+    const isNightOwl = hour >= 22 || (hour >= 0 && hour < 4);
 
-    // 🔑 3. OBTENER OTRAS ESTADÍSTICAS (Actualizada para incluir comentarios)
+    // OBTENER OTRAS ESTADÍSTICAS (Actualizada para incluir comentarios)
     const userStatsResult = await client.query(
-        `SELECT 
+      `SELECT 
             u.points, 
             u.created_at,
             (SELECT COUNT(*) FROM user_challenges WHERE user_id = $1 AND status = 'completed') AS completed_count,
@@ -273,32 +257,33 @@ WHERE user_id = $1 AND challenge_id = $2 RETURNING *`,
             (SELECT COUNT(*) FROM comments WHERE user_id = $1) AS comments_written_count
          FROM users u 
          WHERE u.id = $1`,
-        [user_id]
+      [user_id]
     );
 
-    const { points, created_at, completed_count, created_count: created_c, comments_written_count } = userStatsResult.rows[0];
-    
+    const {
+      points,
+      created_at,
+      completed_count,
+      created_count: created_c,
+      comments_written_count,
+    } = userStatsResult.rows[0];
+
     // Días de antigüedad (DAYS_SINCE_SIGNUP)
     const creationDate = new Date(created_at);
     const timeDiff = new Date().getTime() - creationDate.getTime();
     const daysSinceSignup = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
-
-    // 🔑 4. LLAMAR AL VERIFICADOR DE INSIGNIAS CON TODAS LAS STATS
-    const newBadges = await checkAndAwardBadges(
-        user_id,
-        { 
-          points: parseInt(points), 
-          completed_count: parseInt(completed_count),
-          created_count: parseInt(created_c),
-          days_since_signup: daysSinceSignup,
-          comments_written: parseInt(comments_written_count),
-          streak_days: currentStreak, 
-          is_early_bird: isEarlyBird, 
-          is_night_owl: isNightOwl,   
-        }
-    );
-    // FIN LÓGICA DE INSIGNIAS POR PROGRESO
+    // LLAMAR AL VERIFICADOR DE INSIGNIAS CON TODAS LAS STATS
+    const newBadges = await checkAndAwardBadges(user_id, {
+      points: parseInt(points),
+      completed_count: parseInt(completed_count),
+      created_count: parseInt(created_c),
+      days_since_signup: daysSinceSignup,
+      comments_written: parseInt(comments_written_count),
+      streak_days: currentStreak,
+      is_early_bird: isEarlyBird,
+      is_night_owl: isNightOwl,
+    });
 
     // Devuelve los puntos ganados MÁS las insignias nuevas
     res.status(200).json({
@@ -338,7 +323,6 @@ router.get("/created", auth, async (req, res) => {
   const creator_id = req.user.id;
   try {
     const result = await client.query(
-      // 🔑 IMPORTANTE: Añadida 'duration_days' al SELECT
       "SELECT id, title, description, created_at, is_active, duration_days FROM challenges WHERE creator_id = $1 ORDER BY created_at DESC",
       [creator_id]
     );

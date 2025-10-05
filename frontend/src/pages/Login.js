@@ -1,4 +1,3 @@
-// src/pages/Login.js
 import React, { useState } from 'react';
 import { login } from '../services/api';
 
@@ -18,7 +17,7 @@ const Login = () => {
             const response = await login({ email, password });
             console.log('Inicio de sesión exitoso:', response);
             alert('¡Inicio de sesión exitoso!');
-            // Aquí podrías redirigir al usuario a la página de inicio
+            
         } catch (err) {
             console.error('Error de inicio de sesión:', err.response.data);
             alert('Credenciales incorrectas. Inténtalo de nuevo.');

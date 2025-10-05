@@ -1,4 +1,3 @@
-// frontend/src/pages/CreateChallenge.js
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createChallenge, getCategories } from '../services/api';
