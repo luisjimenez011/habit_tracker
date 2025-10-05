@@ -15,9 +15,8 @@ const auth = (req, res, next) => {
 
     // Adjunta el objeto de usuario decodificado a la petición
     req.user = decoded.user;
-    next(); // Continúa con la siguiente función (la ruta)
+    next(); 
   } catch (err) {
-    // Si el token no es válido, devuelve un error 401
     res.status(401).json({ msg: 'Token no es válido' });
   }
 };

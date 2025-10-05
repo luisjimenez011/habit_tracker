@@ -1,8 +1,7 @@
-// routes/authRoutes.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const client = require('../database'); // Importamos la conexión
+const client = require('../database'); 
 
 // Inicializamos el enrutador de Express
 const router = express.Router();
